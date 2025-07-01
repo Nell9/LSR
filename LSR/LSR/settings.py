@@ -25,19 +25,21 @@ SECRET_KEY = "django-insecure-jrw2djce0l(nnsx)tv8(zy43-+l)(&3s+$lwulnms5b)^03vyq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['192.168.0.185', 'localhost',
+                 '127.0.0.1', 'I-NIOI10-07.local']
 
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "doc"
+    "doc",
+    'rangefilter',
 ]
 
 MIDDLEWARE = [
@@ -115,8 +117,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = '/static/'
 
+# Для продакшена обычно прописывают:
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # куда collectstatic соберёт файлы
+
+# Если используешь дополнительные папки со статикой, укажи их
+STATICFILES_DIRS = [
+    #BASE_DIR / 'static',  # например, папка static в корне проекта
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
