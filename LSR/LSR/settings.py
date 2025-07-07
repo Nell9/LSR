@@ -27,12 +27,17 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['192.168.0.185', 'localhost',
                  '127.0.0.1', 'I-NIOI10-07.local']
-
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "localhost",
+    "192.168.0.185",  # если открываешь с другого устройства в сети
+]
 # Application definition
 
 INSTALLED_APPS = [
-    "jazzmin",
-    "django.contrib.admin",
+    'django_daisy',
+    'django.contrib.humanize',
+    'django.contrib.admin',
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -40,10 +45,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "doc",
     'rangefilter',
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -61,10 +68,12 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            "builtins": ["django.templatetags.static"],
         },
     },
 ]
@@ -78,7 +87,7 @@ WSGI_APPLICATION = "LSR.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": BASE_DIR / "db_5tab.sqlite3",
     }
 }
 
@@ -117,16 +126,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = '/static/'
 
-# Для продакшена обычно прописывают:
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # куда collectstatic соберёт файлы
-
-# Если используешь дополнительные папки со статикой, укажи их
-STATICFILES_DIRS = [
-    #BASE_DIR / 'static',  # например, папка static в корне проекта
-]
+STATIC_URL = "static/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
