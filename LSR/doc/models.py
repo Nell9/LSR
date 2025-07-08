@@ -171,7 +171,7 @@ class Memo(Document):
         Organizations,
         blank=True,
         verbose_name="Адресаты",
-        help_text="(обязательное)",
+        help_text="(обязательное)", 
     )
     self_date = models.DateField(
         verbose_name="Дата СЗ",
@@ -182,7 +182,7 @@ class Memo(Document):
             "(не обязательно) Дата СЗ в нашей "
             "организации можно заполнить позже"
         ),
-        default=now(),
+        default=now,
     )
     attachments = GenericRelation(AttachedFile)
 
@@ -285,7 +285,6 @@ class IncomingLetter(Document):
         on_delete=models.PROTECT,
         help_text="(обязательное)",
     )
-
     workers = models.ManyToManyField(
         User,
         verbose_name="Исполнители",
