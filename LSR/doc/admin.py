@@ -1,3 +1,6 @@
+from datetime import datetime
+from doc.widgets import CustomDatePickerWidget, PastCustomDatePickerWidget
+from django.db import models
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter
 from django import forms
@@ -33,8 +36,13 @@ class AttachedFileInline(GenericTabularInline):
 
 
 class DocumentAdminMixin(admin.ModelAdmin):
-    readonly_fields = ("author",)  # сделаем поле только для чтения
-    ordering = ("self_date",)
+    readonly_fields = ("author",)
+    list_display = (
+        "formatted_self_date",
+        "author",
+        "get_topics",
+    )  # добавь сюда нужные поля
+    ordering = ("self_date",)  # сортируем по оригинальному полю
 
     def save_model(self, request, obj, form, change):
         if not obj.author:
@@ -45,6 +53,13 @@ class DocumentAdminMixin(admin.ModelAdmin):
         return ", ".join([org.name for org in obj.topic.all()])
 
     get_topics.short_description = "Темы"
+
+    def formatted_self_date(self, obj):
+        if obj.self_date:
+            return obj.self_date.strftime("%d.%m.%Y")
+        return "-"
+
+    formatted_self_date.short_description = "Дата документа"
 
 
 @admin.register(topics)
@@ -72,7 +87,7 @@ class DiskAdmin(admin.ModelAdmin):
 class MemoAdmin(DocumentAdminMixin):
     list_display = (
         "number",
-        "self_date",
+        "formatted_self_date",
         "type",
         "content",
         "get_topics",
@@ -85,42 +100,56 @@ class MemoAdmin(DocumentAdminMixin):
         "author",
         "topic",
         "type",
+        # Используем наш кастомный фильтр
         ("self_date", DateRangeFilter),
     )
+    formfield_overrides = {
+        models.DateField: {"widget": PastCustomDatePickerWidget}
+    }
     date_hierarchy = "self_date"
     inlines = [AttachedFileInline]
     search_fields = ("number", "content")
-    fields = ("number", "self_date", "type", "content",
-              "topic", "addressee", "author")
+    fields = ("number", "self_date", "type", "content", "topic", "addressee")
+    ordering = ("-created_at",)
 
     def get_addressees(self, obj):
         return ", ".join([org.name for org in obj.addressee.all()])
 
     get_addressees.short_description = "Адресаты"
 
+   
+
 
 @admin.register(Act)
 class ActAdmin(DocumentAdminMixin):
-    list_display = ("number", "self_date", "content",
-                    "stamp", "topic", "author")
+    list_display = (
+        "number",
+        "formatted_self_date",
+        "content",
+        "stamp",
+        "author",
+    )
     list_filter = (
         "stamp",
-        "topic",
         "author",
         ("self_date", DateRangeFilter),
     )
+    formfield_overrides = {
+        models.DateField: {"widget": PastCustomDatePickerWidget}
+    }
     date_hierarchy = "self_date"
     inlines = [AttachedFileInline]
-    fields = ("number", "self_date", "type", "content", "topic", "author")
+    fields = ("number", "self_date", "type", "content")
     search_fields = ("number", "content")
+    ordering = ("-created_at",)
 
 
 @admin.register(OutgoingLetter)
 class OutgoingLetterAdmin(DocumentAdminMixin):
     list_display = (
         "number",
-        "self_date",
-        "outgoing_date",
+        "formatted_self_date",
+        "formatted_outgoing_date",
         "get_topics",
         "content",
         "get_addressees",
@@ -151,6 +180,17 @@ class OutgoingLetterAdmin(DocumentAdminMixin):
     )
     readonly_fields = ("incoming_letters_list",)
     search_fields = ("number", "content")
+    ordering = ("-created_at",)
+    formfield_overrides = {
+        models.DateField: {"widget": PastCustomDatePickerWidget}
+    }
+
+    def formatted_outgoing_date(self, obj):
+        if obj.outgoing_date:
+            return obj.outgoing_date.strftime("%d.%m.%Y")
+        return "-"  # или "" или "нет даты" — что угодно, чтобы не было ошибки
+
+    formatted_outgoing_date.short_description = "Дата отправки"
 
     def incoming_letters_list(self, obj):
         incoming_letters = obj.incoming_letters.all()
@@ -158,7 +198,7 @@ class OutgoingLetterAdmin(DocumentAdminMixin):
             return "Нет ответов"
         return mark_safe(
             "<br>".join(
-                f"<a href='/doc/incomingletter/?number={i.number}' class='minimal-link'>"
+                f"<a href='/admin/doc/incomingletter/?number={i.number}' class='minimal-link'>"
                 f"<span class='icon'>📄</span>{i}</a>"
                 for i in incoming_letters
             )
@@ -184,30 +224,28 @@ class OutgoingLetterAdmin(DocumentAdminMixin):
         # Построим URL фильтрации по текущему пользователю
         filter_url = f"{reverse('admin:doc_outgoingletter_changelist')}?author__id__exact={request.user.id}"
 
-        extra_context['my_letters_filter_url'] = filter_url
+        extra_context["my_letters_filter_url"] = filter_url
 
         return super().changelist_view(request, extra_context=extra_context)
 
     class Media:
-        css = {
-            'all': ('admin/css/linkstyle.css',)
-        }
+        css = {"all": ("admin/css/linkstyle.css",)}
 
 
 @admin.register(IncomingLetter)
 class IncomingLetterAdmin(DocumentAdminMixin):
     list_display = (
         "number",
-        "self_date",
+        "formatted_self_date",
         "sender_number",
-        "info",
-        "sender_date",
+        "formatted_sender_date",
+        "addressee",
         "get_topics",
         "content",
-        "addressee",
         "get_workers",
-        "author",
+        "info",
         "answer_by_list",
+        "author",
     )
     list_filter = (
         "addressee",
@@ -224,12 +262,12 @@ class IncomingLetterAdmin(DocumentAdminMixin):
         "number",
         "self_date",
         "sender_number",
-        "info",
         "sender_date",
+        "addressee",
         "topic",
         "content",
-        "addressee",
         "answer_by",
+        "info",
         "workers",
     )
     search_fields = (
@@ -238,8 +276,18 @@ class IncomingLetterAdmin(DocumentAdminMixin):
         "content",
         "info",
     )
-
+    ordering = ("-created_at",)
     readonly_fields = ("answer_by_list",)
+    formfield_overrides = {
+        models.DateField: {"widget": PastCustomDatePickerWidget}
+    }
+
+    def formatted_sender_date(self, obj):
+        if obj.sender_date:
+            return obj.sender_date.strftime("%d.%m.%Y")
+        return "-"  # или "" или "нет даты" — что угодно, чтобы не было ошибки
+
+    formatted_sender_date.short_description = "Дата отправки"
 
     def answer_by_list(self, obj):
         answer_by = obj.answer_by.all()
@@ -253,14 +301,14 @@ class IncomingLetterAdmin(DocumentAdminMixin):
         # Письма, на которые это входящее отвечает
         for i in answer_by:
             links.append(
-                f"<a href='/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
+                f"<a href='/admin/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
                 f"<span class='icon'>📄</span>{i}</a>"
             )
 
-    # Исходящие письма, которые ответили на это входящее
+        # Исходящие письма, которые ответили на это входящее
         for i in answered_by_outgoing:
             links.append(
-                f"<a href='/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
+                f"<a href='/admin/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
                 f"<span class='icon'>📄</span>{i}</a>"
             )
 
@@ -281,11 +329,9 @@ class IncomingLetterAdmin(DocumentAdminMixin):
         # Построим URL фильтрации по текущему пользователю
         filter_url = f"{reverse('admin:doc_incomingletter_changelist')}?workers__id__exact={request.user.id}"
 
-        extra_context['my_letters_filter_url'] = filter_url
+        extra_context["my_letters_filter_url"] = filter_url
 
         return super().changelist_view(request, extra_context=extra_context)
 
     class Media:
-        css = {
-            'all': ('admin/css/linkstyle.css',)
-        }
+        css = {"all": ("admin/css/linkstyle.css",)}

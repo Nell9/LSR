@@ -3,11 +3,10 @@
 {% block object-tools %}
   
   {% if my_letters_filter_url %}
-
-      <a href="{{ my_letters_filter_url }}" class="button btn primary-content btn-sm btn-primary ">
-        Показать только мои письма
-      </a>
-
+      {% include "admin/includes/author_filter_buttor.html" %}
+      
+     
   {% endif %}
   {{ block.super }}
+   {% include "admin/includes/reset_filters_button.html" %}
 {% endblock %}

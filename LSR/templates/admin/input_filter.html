@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="admin-filter">
+    <h3>{% blocktrans with filter_title=title %}By {{ filter_title }}{% endblocktrans %}</h3>
+    <form method="GET" action="">
+        {{ form.start_date.label_tag }}
+        {{ form.start_date }}
+        {{ form.end_date.label_tag }}
+        {{ form.end_date }}
+        <button type="submit" class="button">{% trans 'Filter' %}</button>
+    </form>
+</div>

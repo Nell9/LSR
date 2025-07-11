@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.contrib.auth.models import User
@@ -7,8 +8,15 @@ from django.utils.timezone import now
 from django.contrib.contenttypes.fields import GenericRelation
 import os
 from django.utils.text import slugify
-LENGHT_LIMIT = 20
+from bootstrap_datepicker_plus.widgets import (
+    DatePickerInput,
+    TimePickerInput,
+    DateTimePickerInput,
+    MonthPickerInput,
+    YearPickerInput,
+)
 
+LENGHT_LIMIT = 20
 User = get_user_model()
 
 # Модель для хранения тем документов
@@ -34,29 +42,30 @@ def attachment_upload_path(instance, filename):
     if instance.content_object:
         model_name = instance.content_object.__class__.__name__.lower()
     else:
-        model_name = 'unknown'
+        model_name = "unknown"
 
     folder = slugify(model_name)
-    return os.path.join('attachments', folder, filename)
+    return os.path.join("attachments", folder, filename)
 
 
 class AttachedFile(models.Model):
     file = models.FileField(
         upload_to=attachment_upload_path,
-        verbose_name='Файл',
-        help_text='Загрузите связанный файл',
+        verbose_name="Файл",
+        help_text="Загрузите связанный файл",
         blank=True,
-        null=True
+        null=True,
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     # Generic relation:
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     def __str__(self):
         return self.file.name
+
 
 # Модель для хранения организаций
 
@@ -66,8 +75,7 @@ class Organizations(models.Model):
     addressee = models.TextField(
         verbose_name="Адрес организации",
         default="Не указано",
-        help_text="(не обязательно) Адрес организации, "
-                  "можно заполнить позже",
+        help_text="(не обязательно) Адрес организации, " "можно заполнить позже",
     )
     head = models.TextField(
         verbose_name="Руководитель организации",
@@ -84,8 +92,7 @@ class Organizations(models.Model):
 
 
 class Disk(models.Model):
-    number = models.CharField(
-        verbose_name="Номер диска", max_length=255, null=False)
+    number = models.CharField(verbose_name="Номер диска", max_length=255, null=False)
     copyes = models.IntegerField(verbose_name="Количество копий", null=False)
     content = models.TextField(verbose_name="Содержание", null=False)
 
@@ -132,6 +139,13 @@ class Document(models.Model):
         related_name="%(class)s_authors",
         editable=False,
     )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        editable=False,
+        null=False,
+        help_text="(обязательное) Дата создания записи",
+        default=now,
+    )
 
     def __str__(self):
         return self.number
@@ -165,13 +179,13 @@ class Memo(Document):
         choices=[
             ("Входящая", "Входящая"),
             ("Исходящая", "Исходящая"),
-        ]
+        ],
     )
     addressee = models.ManyToManyField(
         Organizations,
         blank=True,
-        verbose_name="Адресаты",
-        help_text="(обязательное)", 
+        verbose_name="Кому/От кого",
+        help_text="(обязательное) Кому адресована служебная записка",
     )
     self_date = models.DateField(
         verbose_name="Дата СЗ",
@@ -179,8 +193,7 @@ class Memo(Document):
         null=True,
         blank=True,
         help_text=(
-            "(не обязательно) Дата СЗ в нашей "
-            "организации можно заполнить позже"
+            "(не обязательно) Дата СЗ в нашей " "организации можно заполнить позже"
         ),
         default=now,
     )
@@ -189,6 +202,11 @@ class Memo(Document):
     class Meta:
         verbose_name = "Служебная записка"
         verbose_name_plural = "Служебные записки"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number", "self_date"], name="unique_number_self_date_memo"
+            )
+        ]
 
 
 class Act(Document):
@@ -202,7 +220,7 @@ class Act(Document):
             ("О создании", "О создании"),
             ("Об уничтожении", "Об уничтожении"),
             ("О стирании", "О стирании"),
-        ]
+        ],
     )
     stamp = models.CharField(
         verbose_name="Гриф",
@@ -214,23 +232,28 @@ class Act(Document):
             ("ДСП", "ДСП"),
             ("Секретно", "Секретно"),
             ("Совершенно секретно", "Совершенно секретно"),
-        ]
-    )
-    topic = models.CharField(
-        verbose_name="Тема акта",
-        max_length=255,
-        null=False,
-        help_text="(обязательное) Тема акта",
-        default="Не указана",
+        ],
     )
     attachments = GenericRelation(AttachedFile)
 
     class Meta:
         verbose_name = "Акт"
         verbose_name_plural = "Акты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number", "self_date"], name="unique_number_self_date_act"
+            )
+        ]
 
 
 class OutgoingLetter(Document):
+    self_date = models.DateField(
+        verbose_name="Дата взятия номера",
+        editable=True,
+        null=False,
+        help_text="(обязательное) Дата взятия номера в нашей организации",
+        default=now,
+    )
     outgoing_date = models.DateField(
         verbose_name="Дата отправки",
         editable=True,
@@ -241,21 +264,20 @@ class OutgoingLetter(Document):
     addressee = models.ManyToManyField(
         Organizations,
         blank=True,
-        verbose_name="Адресаты",
-        help_text="(обязательное)",
+        verbose_name="Кому",
+        help_text="(обязательное) Кому адресовано исходящее письмо",
     )
     disk = models.ManyToManyField(
         Disk,
         verbose_name="Диск",
-        help_text=(
-            "(не обязательное) Добавьте новый диск для записи " "через LPBurn."),
+        help_text=("(не обязательное) Добавьте новый диск для записи " "через LPBurn."),
         blank=True,
     )
     answers_to = models.ManyToManyField(
-        'IncomingLetter',
-        verbose_name='Ответ на вх. письмо',
+        "IncomingLetter",
+        verbose_name="Ответ на вх. письмо",
         blank=True,
-        related_name='answered_by_outgoing',
+        related_name="answered_by_outgoing",
     )
     attachments = GenericRelation(AttachedFile)
 
@@ -265,6 +287,12 @@ class OutgoingLetter(Document):
     class Meta:
         verbose_name = "Исходящее письмо"
         verbose_name_plural = "Исходящие письма"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number", "self_date"],
+                name="unique_number_self_date_outgoing_letter",
+            )
+        ]
 
 
 class IncomingLetter(Document):
@@ -272,7 +300,7 @@ class IncomingLetter(Document):
         verbose_name="Номер письма отправителя",
     )
     sender_date = models.DateField(
-        verbose_name="Дата письма",
+        verbose_name="Дата письма отправителя",
         editable=True,
         null=False,
         help_text="(обязательное) Дата отправителя",
@@ -281,9 +309,9 @@ class IncomingLetter(Document):
     addressee = models.ForeignKey(
         Organizations,
         null=True,
-        verbose_name="Адресат",
+        verbose_name="От кого",
         on_delete=models.PROTECT,
-        help_text="(обязательное)",
+        help_text="(обязательное) Организация, от которой пришло письмо",
     )
     workers = models.ManyToManyField(
         User,
@@ -312,3 +340,9 @@ class IncomingLetter(Document):
     class Meta:
         verbose_name = "Входящее письмо"
         verbose_name_plural = "Входящие письма"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number", "self_date"],
+                name="unique_number_self_date_incoming_letter",
+            )
+        ]

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'rangefilter',
     "debug_toolbar",
     'django_admin_filters',
+    "bootstrap_datepicker_plus",
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -60,7 +61,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "LSR.urls"
-
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
