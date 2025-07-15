@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.admin import GenericTabularInline
-
+from django.utils.html import format_html
 User = get_user_model()
 admin.site.site_header = "Учетик НИЛ-103"
 admin.site.site_title = "Панель управления"
@@ -33,6 +33,17 @@ class AttachedFileInline(GenericTabularInline):
     max_num = 10
     verbose_name = "Прикрепленный документ"
     verbose_name_plural = "Прикрепленные документы"
+
+    # Показываем и поле загрузки, и ссылку
+    fields = ('file', 'download_link')
+    readonly_fields = ('download_link',)     # Ссылка только для чтения
+
+    def download_link(self, obj):
+        if obj.pk and obj.file:
+            url = reverse('doc:download_file', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank">Скачать</a>', url)
+        return "-"
+    download_link.short_description = "Скачать документ"
 
 
 class DocumentAdminMixin(admin.ModelAdmin):
@@ -103,9 +114,8 @@ class MemoAdmin(DocumentAdminMixin):
         # Используем наш кастомный фильтр
         ("self_date", DateRangeFilter),
     )
-    formfield_overrides = {
-        models.DateField: {"widget": PastCustomDatePickerWidget}
-    }
+    formfield_overrides = {models.DateField: {
+        "widget": PastCustomDatePickerWidget}}
     date_hierarchy = "self_date"
     inlines = [AttachedFileInline]
     search_fields = ("number", "content")
@@ -116,8 +126,6 @@ class MemoAdmin(DocumentAdminMixin):
         return ", ".join([org.name for org in obj.addressee.all()])
 
     get_addressees.short_description = "Адресаты"
-
-   
 
 
 @admin.register(Act)
@@ -134,9 +142,8 @@ class ActAdmin(DocumentAdminMixin):
         "author",
         ("self_date", DateRangeFilter),
     )
-    formfield_overrides = {
-        models.DateField: {"widget": PastCustomDatePickerWidget}
-    }
+    formfield_overrides = {models.DateField: {
+        "widget": PastCustomDatePickerWidget}}
     date_hierarchy = "self_date"
     inlines = [AttachedFileInline]
     fields = ("number", "self_date", "type", "content")
@@ -181,9 +188,8 @@ class OutgoingLetterAdmin(DocumentAdminMixin):
     readonly_fields = ("incoming_letters_list",)
     search_fields = ("number", "content")
     ordering = ("-created_at",)
-    formfield_overrides = {
-        models.DateField: {"widget": PastCustomDatePickerWidget}
-    }
+    formfield_overrides = {models.DateField: {
+        "widget": PastCustomDatePickerWidget}}
 
     def formatted_outgoing_date(self, obj):
         if obj.outgoing_date:
@@ -193,16 +199,22 @@ class OutgoingLetterAdmin(DocumentAdminMixin):
     formatted_outgoing_date.short_description = "Дата отправки"
 
     def incoming_letters_list(self, obj):
-        incoming_letters = obj.incoming_letters.all()
+        incoming_letters = obj.answers_to.all()
+
         if not incoming_letters:
             return "Нет ответов"
-        return mark_safe(
-            "<br>".join(
+        links = []
+
+        # Письма, на которые это входящее отвечает
+        for i in incoming_letters:
+            links.append(
                 f"<a href='/admin/doc/incomingletter/?number={i.number}' class='minimal-link'>"
-                f"<span class='icon'>📄</span>{i}</a>"
-                for i in incoming_letters
+                f"<span class='icon'>Ответ на</span>{i}</a>"
             )
-        )
+
+        # Исходящие письма, которые ответили на это входящее
+
+        return mark_safe("<br>".join(links))
 
     incoming_letters_list.short_description = "вх. ответы:"
 
@@ -278,9 +290,8 @@ class IncomingLetterAdmin(DocumentAdminMixin):
     )
     ordering = ("-created_at",)
     readonly_fields = ("answer_by_list",)
-    formfield_overrides = {
-        models.DateField: {"widget": PastCustomDatePickerWidget}
-    }
+    formfield_overrides = {models.DateField: {
+        "widget": PastCustomDatePickerWidget}}
 
     def formatted_sender_date(self, obj):
         if obj.sender_date:
@@ -302,14 +313,14 @@ class IncomingLetterAdmin(DocumentAdminMixin):
         for i in answer_by:
             links.append(
                 f"<a href='/admin/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
-                f"<span class='icon'>📄</span>{i}</a>"
+                f"<span class='icon'>Отв. на</span>{i}</a>"
             )
 
         # Исходящие письма, которые ответили на это входящее
         for i in answered_by_outgoing:
             links.append(
                 f"<a href='/admin/doc/outgoingletter/?number={i.number}' class='minimal-link'>"
-                f"<span class='icon'>📄</span>{i}</a>"
+                f"<span class='icon'>Исп.</span>{i}</a>"
             )
 
         return mark_safe("<br>".join(links))
