@@ -326,7 +326,7 @@ class IncomingLetter(Document):
     )
     answer_by = models.ManyToManyField(
         OutgoingLetter,
-        verbose_name="Ответ на исх. письмо",
+        verbose_name="Связанные документы",
         null=True,
         blank=True,
         related_name="incoming_letters",
