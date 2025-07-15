@@ -325,7 +325,7 @@ class IncomingLetterAdmin(DocumentAdminMixin):
 
         return mark_safe("<br>".join(links))
 
-    answer_by_list.short_description = "ответ на исх:"
+    answer_by_list.short_description = "Связанные письма:"
 
     def get_workers(self, obj):
         return ", ".join([worker.username for worker in obj.workers.all()])
