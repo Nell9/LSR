@@ -148,7 +148,10 @@ class Document(models.Model):
     )
 
     def __str__(self):
-        return self.number
+        if self.number:
+            return self.number
+        else:
+            return "Без номера"
 
     class Meta:
         verbose_name = ""
@@ -169,6 +172,7 @@ class Memo(Document):
         null=True,
         blank=True,
         help_text="(не обязательно) Номер СЗ в нашей организации можно заполнить позже",
+        default="Заполнить позже",
     )
     type = models.CharField(
         verbose_name="Тип СЗ",
@@ -280,7 +284,7 @@ class OutgoingLetter(Document):
         related_name="answered_by_outgoing",
     )
     attachments = GenericRelation(AttachedFile)
-
+    
     def __str__(self):
         return f"Исх. №{self.number} от {self.self_date}"
 

@@ -26,13 +26,19 @@ SECRET_KEY = "django-insecure-jrw2djce0l(nnsx)tv8(zy43-+l)(&3s+$lwulnms5b)^03vyq
 DEBUG = True
 
 ALLOWED_HOSTS = ['192.168.0.185', 'localhost',
-                 '127.0.0.1', 'I-NIOI10-07.local']
+                 '127.0.0.1', 'I-NIOI10-07.local', '192.168.1.99']
 INTERNAL_IPS = [
     "127.0.0.1",
     "localhost",
     "192.168.0.185",  # если открываешь с другого устройства в сети
 ]
 # Application definition
+BOOTSTRAP_DATEPICKER_PLUS = {
+    "momentjs_url": "/static/js/moment-with-locales.min.js",
+    "datetimepicker_js_url": "/static/js/bootstrap-datetimepicker.min.js",
+    "datetimepicker_css_url": "/static/css/bootstrap-datetimepicker.min.css",
+    "bootstrap_icon_css_url": "/static/css/bootstrap-icons.css",
+}
 
 INSTALLED_APPS = [
     'django_daisy',
@@ -46,9 +52,8 @@ INSTALLED_APPS = [
     "doc",
     'rangefilter',
     "debug_toolbar",
-    'django_admin_filters',
-    "bootstrap_datepicker_plus",
 ]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
