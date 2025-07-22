@@ -29,8 +29,7 @@ http://localhost:8000/admin
 
 
 
-![Форма создания входящие письма](<img width="1920" height="934" alt="image" src="https://github.com/user-attachments/assets/fc4cf60d-6d0c-43b2-a1c7-4661fbb85218" />
-)  
+![Форма создания входящие письма](LSR/screenshots/1.png)  
 *Форма создания служебной записки с выбором тем и прикреплением файлов*
 
 ---
